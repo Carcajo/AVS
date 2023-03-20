@@ -1,4 +1,5 @@
 import math
+import re
 from math import copysign, fabs, floor, isfinite, modf
 
 def float_to_bin_fixed(f):
@@ -10,55 +11,59 @@ def float_to_bin_fixed(f):
     assert d & (d - 1) == 0
     return f'{sign}{floor(fint):b}.{n:0{d.bit_length() - 1}b}'
 
-def add_binary_decimals(a, b):
-    a_int, a_frac = str(a).split('.')
-    b_int, b_frac = str(b).split('.')
-    a_int = bin(int(a_int))[2:]
-    b_int = bin(int(b_int))[2:]
-    a_frac = float_to_bin_fixed(float('0.' + a_frac))
-    b_frac = float_to_bin_fixed(float('0.' + b_frac))
-    len_diff = abs(len(a_frac) - len(b_frac))
-    if len(a_frac) > len(b_frac):
-        b_frac += '0' * len_diff
-    else:
-        a_frac += '0' * len_diff
+def add_binary_decimals(decimal_num1, decimal_num2):
+    decimal_str1 = str(decimal_num1)
+    decimal_str2 = str(decimal_num2)
+    int_part1, frac_part1 = decimal_str1.split('.')
+    int_part2, frac_part2 = decimal_str2.split('.')
+    max_len = max(len(frac_part1), len(frac_part2))
+    frac_part1 = frac_part1.ljust(max_len, '0')
+    frac_part2 = frac_part2.ljust(max_len, '0')
+    frac_sum = int(frac_part1, 2) + int(frac_part2, 2)
+    int_part_sum = frac_sum // 2
+    frac_sum_binary = bin(frac_sum % 2**max_len).replace("0b", "").rjust(max_len, '0')
+    int_sum = int(int_part1) + int(int_part2) + int_part_sum
+    int_sum_binary = float_to_bin_fixed(int_sum)
+    return int_sum_binary + '.' + frac_sum_binary
 
-    result_int = bin(int(a_int, 2) + int(b_int, 2))[2:]
-    result_frac = ''
-    carry = 0
-    for i in range(len(a_frac) - 1, -1, -1):
-        bit_sum = int(a_frac[i], 2) + int(b_frac[i], 2) + carry
-        if bit_sum >= 2:
-            bit_sum -= 2
-            carry = 1
-        else:
-            carry = 0
-        result_frac = str(bit_sum) + result_frac
-    if carry:
-        result_int = bin(int(result_int, 2) + 1)[2:]
-    return result_int + '.' + result_frac
+def frange(start, stop, step):
+    i = 0
+    while True:
+        value = start + i * step
+        if value >= stop:
+            break
+        yield value
+        i += 1
+a = float(input("Введите начальное значение аргумента x: "))
+b = float(input("Введите конечное значение аргумента x: "))
+h = float(input("Введите шаг изменения аргумента x: "))
+eps = input("Введите требуемую точность ε: ")
+while re.match(r'^[-0-9]*$', eps) is None:
+    print("Error. Try again")
+    eps = input()
 
-a = float(input("Введите первое число: "))
-a1 = float_to_bin_fixed(a)
-b = float(input("Введите второе число: "))
-b1 = float_to_bin_fixed(b)
-summa = a+b
-summa1 = float_to_bin_fixed(summa)
-diff = a-b
-diff1 = float_to_bin_fixed(diff)
-mult = a*b
-mult1 = float_to_bin_fixed(mult)
-dev = a/b
-dev1 = float_to_bin_fixed(dev)
+# Создаем пустые списки для хранения результатов
+x_list = []
+y_list = []
+s_list = []
+n_list = []
 
-print("Сумма в двоичном виде: ", summa1)
-print("Сумма в десятичном виде: ", summa)
+# Вычисляем значения функции Y(x), суммы S(x) и число итераций n
+for x in frange(a, b, h):
+    y = math.sin(x) + math.cos(x)
+    s = 0
+    n = 0
+    while True:
+        n += 1
+        s += (-1)**(n+1) * x**(2*n-1) / math.factorial(2*n-1)
+        if abs(y - s) < int(eps):
+            break
+    x_list.append(x)
+    y_list.append(y)
+    s_list.append(s)
+    n_list.append(n)
 
-print("Разность в двоичном виде: ", diff1)
-print("Разность в десятичном виде: ", diff)
-
-print("Произведение в двоичном виде: ", mult1)
-print("Произведение в десятичном виде: ", mult)
-
-print("Деление в двоичном виде: ", dev1)
-print("Деление в десятичном виде: ", dev)
+# Выводим результаты в виде таблицы
+print("{:<10} {:<10} {:<10} {:<10}".format("x", "Y(x)", "S(x)", "n"))
+for i in range(len(x_list)):
+    print("{:<10.3f} {:<10.3f} {:<10.3f} {:<10}".format(x_list[i], y_list[i], s_list[i], n_list[i]))
